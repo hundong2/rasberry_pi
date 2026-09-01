@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Raspberry Pi Camera Viewer</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <p class="eyebrow">LIVE VISION</p>
+          <h1>Camera real-time viewer</h1>
+        </div>
+        <span id="connection" class="status offline">연결 중</span>
+      </header>
+      <section class="controls">
+        <label>카메라 <select id="camera"><option value="">프레임 대기 중</option></select></label>
+        <label>Viewer token <input id="token" type="password" placeholder="설정한 경우 입력" /></label>
+        <button id="connect">연결</button>
+      </section>
+      <section class="viewer">
+        <img id="frame" alt="실시간 카메라 영상" />
+        <div id="empty">라즈베리 파이에서 전송되는 프레임을 기다리고 있습니다.</div>
+      </section>
+      <section class="metrics">
+        <div><span>Camera</span><strong id="camera-id">—</strong></div>
+        <div><span>Processing</span><strong id="processing">— ms</strong></div>
+        <div><span>Detections</span><strong id="detections">0</strong></div>
+        <div><span>Viewer FPS</span><strong id="fps">0.0</strong></div>
+      </section>
+    </main>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>

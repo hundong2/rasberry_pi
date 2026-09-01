@@ -1,0 +1,27 @@
+services:
+  api:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      CAMERA_TOKEN: ${CAMERA_TOKEN:?CAMERA_TOKEN is required}
+      VIEWER_TOKEN: ${VIEWER_TOKEN:-}
+      OPENCV_URL: http://vision:8000
+      MAX_CAMERA_FPS: ${MAX_CAMERA_FPS:-12}
+      MAX_FRAME_BYTES: ${MAX_FRAME_BYTES:-2097152}
+      VISION_MODE: ${VISION_MODE:-motion}
+      JPEG_QUALITY: ${JPEG_QUALITY:-80}
+    depends_on:
+      vision:
+        condition: service_healthy
+
+  vision:
+    build: ./vision
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
