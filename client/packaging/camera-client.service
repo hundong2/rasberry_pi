@@ -1,22 +1,33 @@
 [Unit]
+# systemctl status에 표시되는 사람이 읽는 서비스 설명이다.
 Description=Raspberry Pi C++ camera streaming client
+# network-online 뒤에 시작 순서를 배치하고 해당 target 활성화도 함께 요청한다.
 After=network-online.target
 Wants=network-online.target
 
 [Service]
+# simple은 ExecStart 프로세스 자체를 main service process로 간주한다.
 Type=simple
+# root가 아닌 pi 사용자/그룹 권한으로 실행한다.
 User=pi
 Group=pi
+# 카메라 장치 파일 접근에 필요한 video 보조 그룹을 추가한다.
 SupplementaryGroups=video
+# 비밀 토큰과 실행 설정을 unit 밖의 권한 제한 파일에서 읽는다.
 EnvironmentFile=/etc/camera-client.env
+# systemd가 시작하고 추적할 절대 binary 경로다.
 ExecStart=/opt/camera-client/bin/camera-client
+# 종료 코드가 0이 아닐 때만 5초 후 재시작한다.
 Restart=on-failure
 RestartSec=5
+# stop 후 10초가 지나도 끝나지 않으면 systemd가 강제 종료할 수 있다.
 TimeoutStopSec=10
+# 아래 항목은 권한 상승과 파일 시스템 접근 범위를 줄이는 hardening 설정이다.
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
 
 [Install]
+# enable하면 일반 다중 사용자 부팅 단계에서 이 unit을 시작하도록 연결한다.
 WantedBy=multi-user.target
