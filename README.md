@@ -18,6 +18,10 @@ OpenCV 서버에서 처리한 영상을 웹 브라우저에 실시간으로 표�
 - Make 기반 C++ 빌드·테스트와 systemd 상시 실행
 - GitHub Actions에서 C++ 클라이언트 자동 빌드·테스트
 
+## Server site capture image
+
+- ![server image](./docs/img/server.png). 
+
 ## 전체 구조
 
 ```text
