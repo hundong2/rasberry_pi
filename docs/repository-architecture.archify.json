@@ -1,0 +1,235 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Raspberry Pi 실시간 카메라 뷰어 아키텍처",
+    "output": "repository-architecture.html",
+    "quality_profile": "showcase",
+    "viewBox": [1380, 650],
+    "repository": {
+      "url": "https://github.com/hundong2/rasberry_pi.git",
+      "revision": "ee287eaa7df3ec345f61ed8a5e67a046a02f3b95"
+    }
+  },
+  "components": [
+    {
+      "id": "cameraHardware",
+      "type": "external",
+      "label": "Raspberry Pi Camera",
+      "sublabel": "IMX708 / libcamera",
+      "pos": [20, 200],
+      "size": [145, 72],
+      "sources": [{ "path": "client/src/camera_process.cpp", "label": "카메라 프로세스 실행" }]
+    },
+    {
+      "id": "rpicamVid",
+      "type": "external",
+      "label": "rpicam-vid",
+      "sublabel": "MJPEG 캡처 프로세스",
+      "pos": [210, 200],
+      "size": [145, 72],
+      "sources": [{ "path": "client/src/camera_process.cpp", "label": "MJPEG stdout" }]
+    },
+    {
+      "id": "cameraProcess",
+      "type": "backend",
+      "label": "CameraProcess",
+      "sublabel": "JPEG 프레임 분리",
+      "pos": [400, 200],
+      "size": [145, 72],
+      "sources": [{ "path": "client/src/camera_process.cpp", "label": "캡처 스레드" }]
+    },
+    {
+      "id": "latestQueue",
+      "type": "messagebus",
+      "label": "LatestFrameQueue",
+      "sublabel": "용량 1 · 최신 우선",
+      "pos": [590, 200],
+      "size": [150, 72],
+      "sources": [{ "path": "client/include/camera_client/latest_frame_queue.hpp", "label": "최신 프레임 큐" }]
+    },
+    {
+      "id": "socketClient",
+      "type": "backend",
+      "label": "C++ SocketIoClient",
+      "sublabel": "Engine.IO 4 · /stream",
+      "tag": "CAMERA_TOKEN",
+      "pos": [780, 200],
+      "size": [155, 72],
+      "sources": [{ "path": "client/src/socket_io_client.cpp", "label": "프레임 송신과 ACK" }]
+    },
+    {
+      "id": "cameraGateway",
+      "type": "security",
+      "label": "NestJS CameraGateway",
+      "sublabel": "Socket.IO 인증·중계",
+      "tag": "포트 3000",
+      "pos": [970, 200],
+      "size": [170, 72],
+      "sources": [{ "path": "server/src/camera/camera.gateway.ts", "label": "WebSocket 게이트웨이" }]
+    },
+    {
+      "id": "browserViewer",
+      "type": "frontend",
+      "label": "웹 브라우저 뷰어",
+      "sublabel": "정적 UI · 실시간 JPEG",
+      "tag": "VIEWER_TOKEN 선택",
+      "pos": [1220, 200],
+      "size": [150, 72],
+      "sources": [{ "path": "server/public/app.js", "label": "viewer:frame 렌더링" }]
+    },
+    {
+      "id": "cameraService",
+      "type": "backend",
+      "label": "CameraService",
+      "sublabel": "FPS 제한·backpressure",
+      "pos": [970, 350],
+      "size": [170, 72],
+      "sources": [{ "path": "server/src/camera/camera.service.ts", "label": "프레임 수락 정책" }]
+    },
+    {
+      "id": "opencvAdapter",
+      "type": "backend",
+      "label": "OpenCvService",
+      "sublabel": "HTTP 어댑터·Base64 변환",
+      "pos": [1180, 350],
+      "size": [150, 72],
+      "sources": [{ "path": "server/src/opencv/opencv.service.ts", "label": "FastAPI 호출" }]
+    },
+    {
+      "id": "visionService",
+      "type": "backend",
+      "label": "FastAPI + OpenCV",
+      "sublabel": "motion · edges · none",
+      "tag": "내부 포트 8000",
+      "pos": [1180, 500],
+      "size": [150, 72],
+      "sources": [{ "path": "server/vision/app.py", "label": "영상 처리 API" }]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Raspberry Pi 장치 · systemd",
+      "wraps": ["cameraHardware", "rpicamVid", "cameraProcess", "latestQueue", "socketClient"],
+      "pad": 15
+    },
+    {
+      "kind": "region",
+      "label": "서버 호스트 · Docker Compose",
+      "wraps": ["cameraGateway", "cameraService", "opencvAdapter", "visionService"],
+      "pad": 42
+    },
+    {
+      "kind": "security-group",
+      "label": "NestJS API 컨테이너",
+      "wraps": ["cameraGateway", "cameraService", "opencvAdapter"],
+      "pad": 22
+    },
+    {
+      "kind": "security-group",
+      "label": "Vision 컨테이너",
+      "wraps": ["visionService"],
+      "pad": 22
+    }
+  ],
+  "connections": [
+    {
+      "id": "cameraToRpicam",
+      "from": "cameraHardware",
+      "to": "rpicamVid",
+      "label": "카메라 프레임",
+      "variant": "emphasis",
+      "labelAt": [188, 286]
+    },
+    {
+      "id": "rpicamToProcess",
+      "from": "rpicamVid",
+      "to": "cameraProcess",
+      "label": "MJPEG stdout",
+      "variant": "emphasis",
+      "labelAt": [378, 196]
+    },
+    {
+      "id": "processToQueue",
+      "from": "cameraProcess",
+      "to": "latestQueue",
+      "label": "완성 JPEG",
+      "variant": "emphasis",
+      "labelAt": [568, 286]
+    },
+    {
+      "id": "queueToClient",
+      "from": "latestQueue",
+      "to": "socketClient",
+      "label": "최신 프레임",
+      "variant": "emphasis",
+      "labelAt": [760, 196]
+    },
+    {
+      "id": "clientToGateway",
+      "from": "socketClient",
+      "to": "cameraGateway",
+      "label": "camera:frame · WebSocket",
+      "variant": "emphasis",
+      "labelAt": [952, 286]
+    },
+    {
+      "id": "gatewayToViewer",
+      "from": "cameraGateway",
+      "to": "browserViewer",
+      "label": "viewer:frame · WebSocket",
+      "variant": "emphasis",
+      "labelAt": [1180, 196]
+    },
+    {
+      "id": "gatewayToService",
+      "from": "cameraGateway",
+      "to": "cameraService",
+      "label": "acceptFrame() · 처리 결과",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [1055, 311]
+    },
+    {
+      "id": "serviceToAdapter",
+      "from": "cameraService",
+      "to": "opencvAdapter",
+      "label": "선별된 JPEG",
+      "labelAt": [1160, 436]
+    },
+    {
+      "id": "adapterToVision",
+      "from": "opencvAdapter",
+      "to": "visionService",
+      "label": "POST /process ↔ JPEG·metadata",
+      "labelAt": [1255, 456]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "주 경로",
+      "items": [
+        "JPEG를 Socket.IO /stream으로 전송하고 처리 결과를 브라우저에 broadcast",
+        "클라이언트와 서버 모두 누적 지연보다 최신 프레임을 우선"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "신뢰 경계",
+      "items": [
+        "카메라는 CAMERA_TOKEN, 뷰어는 선택적 VIEWER_TOKEN으로 연결 인증",
+        "Compose에서 외부 공개 포트는 3000이며 Vision 8000은 내부 서비스 통신"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "현재 범위",
+      "items": [
+        "상태와 이전 프레임은 프로세스 메모리에만 유지하며 영구 저장소는 없음",
+        "TLS reverse proxy, Redis 수평 확장, 객체 인식은 현재 구현에 포함되지 않음"
+      ]
+    }
+  ]
+}
